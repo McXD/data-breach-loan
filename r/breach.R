@@ -30,3 +30,6 @@ breach %>%
     min_date = min(breach_disclosure_date),
     max_date = max(breach_disclosure_date)
   )
+
+# Save cvs
+write_csv(breach, "data/breach.csv")

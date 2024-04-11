@@ -45,7 +45,7 @@ data <- data %>%
     )
   ) %>%
   select(-tmp) %>%
-  ungroup( )
+  ungroup()
 
 # Drop base columns
 data <- data %>%
@@ -58,16 +58,31 @@ data <- data %>%
 # Summarise numerical columns
 data %>%
   summarise(across(where(is.numeric), .fns = list(
-      n = ~sum(!is.na(.)),
-      mean = ~mean(., na.rm = TRUE),
-      sd = ~sd(., na.rm = TRUE),
-      p25 = ~quantile(., probs = 0.25, na.rm = TRUE),
-      median = ~median(., na.rm = TRUE),
-      p75 = ~quantile(., probs = 0.75, na.rm = TRUE)
-    ))) %>%
+    n = ~ sum(!is.na(.)),
+    mean = ~ mean(., na.rm = TRUE),
+    sd = ~ sd(., na.rm = TRUE),
+    p25 = ~ quantile(., probs = 0.25, na.rm = TRUE),
+    median = ~ median(., na.rm = TRUE),
+    p75 = ~ quantile(., probs = 0.75, na.rm = TRUE)
+  ))) %>%
   pivot_longer(
     cols = everything(),
     names_to = c("Variables", ".value"),
     names_pattern = "(.*)_(.*)"
   ) %>%
   kable()
+
+# Map sic code to indsutry
+sic_map <- read_csv("data/Siccodes48.csv") %>%
+  select(index, name_abbr, sub_range_start, sub_range_end)
+
+# join by falling in range of sic code
+data <- data %>%
+  mutate(sic = as.numeric(sic)) %>%
+  cross_join(sic_map) %>%
+  filter(sic >= sub_range_start & sic <= sub_range_end) %>%
+  rename(industry = index, industry_abbr = name_abbr) %>%
+  select(-sub_range_start, -sub_range_end)
+
+# Save data
+write_csv(data, "data/firm.csv")

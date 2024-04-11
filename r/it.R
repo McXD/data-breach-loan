@@ -10,8 +10,7 @@ KEYWORDS <- c("information", "security", "technology")
 data %>%
   filter(
     str_detect(tolower(TITLE), str_c(KEYWORDS, collapse = "|"))
-  ) %>%
-  View()
+  )
 
 data <- data %>%
   mutate(
@@ -22,3 +21,6 @@ data <- data %>%
   select(GVKEY, TICKER, CONAME, CUSIP, YEAR, it_expertise)
 
 summary(data$it_expertise)
+
+# Save data
+write_csv(data, "data/it_expertise.csv")
