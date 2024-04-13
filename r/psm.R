@@ -4,7 +4,7 @@ library(MatchIt)
 
 # Constants
 START <- 2005
-END <- 2014
+END <- 2018
 
 firm <- read_csv("data/firm.csv")
 breach <- read_csv("data/breach.csv")
@@ -21,9 +21,9 @@ breach <- breach %>%
   mutate(breach = 1) %>%
   select(-breach_disclosure_date)
 
-# How many breaches are happen to the same firm-year?
+# How many breaches are happen to the same firm?
 breach %>%
-  group_by(edgar_ticker, breach_year) %>%
+  group_by(edgar_ticker) %>%
   summarise(n = n()) %>%
   filter(n > 1)
 
@@ -44,13 +44,12 @@ data <- data %>%
   arrange(fyear, tic) %>%
   na.omit()
 
+# Filter time period
+data <- data %>%
+  filter(fyear >= START, fyear <= END)
+
 # How many breaches?
 summary(data$breach)
-summary(data$fyear)
-
-data %>%
-  filter(fyear >= START, fyear <= END) %>%
-  summarise(n = sum(breach))
 
 # PSM
 
@@ -61,13 +60,13 @@ data <- data %>%
     industry = as.factor(industry)
   )
 
-reg_formula <- as.formula("breach ~ firm_size + leverage + roa + operational_risk + tangibility + z_score + mb + it_expertise")
+reg_formula <- breach ~ firm_size + leverage + roa + operational_risk + tangibility + z_score + mb + it_expertise + fyear + industry
 
-ps_model <- glm(reg_formula, data = data, family = "binomial")
+ps_model <- glm(reg_formula, data = data, family = binomial(link = "probit"))
 
 summary(ps_model)
 
-match_data <- matchit(reg_formula, method = "nearest", data = data)
+match_data <- matchit(reg_formula, method = "nearest", data = data, link = "probit")
 
 summary(match_data)
 

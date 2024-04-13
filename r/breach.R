@@ -16,8 +16,6 @@ breach <- read_csv("data/breach_wrds.csv") %>%
     breach_disclosure_date = as.Date(breach_disclosure_date, format = "%d/%m/%Y"),
   )
 
-breach
-
 # Check percentage of missing values
 breach %>%
   summarise_all(~ sum(is.na(.)) / n()) %>%
@@ -29,6 +27,13 @@ breach %>%
   summarise(
     min_date = min(breach_disclosure_date),
     max_date = max(breach_disclosure_date)
+  )
+
+# Filter time period
+breach <- breach %>%
+  filter(
+    breach_disclosure_date >= as.Date("2005-01-01"),
+    breach_disclosure_date <= as.Date("2018-12-31")
   )
 
 # Save cvs

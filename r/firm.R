@@ -13,13 +13,13 @@ library(slider)
 library(stargazer)
 library(knitr)
 
-
 # Load data
 data <- read_csv("data/crsp_compustat_merged.csv") %>%
   select(-GVKEY, -indfmt, -consol, -popsrc, -datafmt, -cusip, -curcd, -costat)
 
 summary(data)
 
+# Calculate firm level variables
 data <- data %>%
   mutate(
     firm_size = log(1 + at),
@@ -47,12 +47,9 @@ data <- data %>%
   select(-tmp) %>%
   ungroup()
 
-# Drop dplyr columns
+# Clean
 data <- data %>%
-  select(-at, -lt, -ebitda, -ppent, -wcap, -re, -mkvalt, -sale, -oancf)
-
-# Drop rows with Inf
-data <- data %>%
+  select(-at, -lt, -ebitda, -ppent, -wcap, -re, -mkvalt, -sale, -oancf) %>%
   filter_all(all_vars(!is.infinite(.)))
 
 # Summarise numerical columns
@@ -76,7 +73,6 @@ data %>%
 sic_map <- read_csv("data/Siccodes48.csv") %>%
   select(index, name_abbr, sub_range_start, sub_range_end)
 
-# join by falling in range of sic code
 data <- data %>%
   mutate(sic = as.numeric(sic)) %>%
   cross_join(sic_map) %>%

@@ -15,7 +15,8 @@ matched <- read_csv("data/matched.csv")
 # Inner join by ticker
 data <- loan %>%
   inner_join(matched, by = c("Ticker" = "tic"), relationship = "many-to-many") %>%
-  select(-Borrower_Name)
+  select(-Borrower_Name) %>%
+  filter(Tranche_Active_Date >= as.Date("2003-01-01"), Tranche_Active_Date <= as.Date("2020-12-31"))
 
 # Calculate loan characteristics
 data <- data %>%
@@ -36,7 +37,6 @@ data <- data %>%
   na.omit()
 
 summary(data)
-View(data)
 
 # Test correlation between treated and loan characteristics
 # Show signifinance
