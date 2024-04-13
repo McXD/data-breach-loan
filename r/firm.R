@@ -47,7 +47,7 @@ data <- data %>%
   select(-tmp) %>%
   ungroup()
 
-# Drop base columns
+# Drop dplyr columns
 data <- data %>%
   select(-at, -lt, -ebitda, -ppent, -wcap, -re, -mkvalt, -sale, -oancf)
 
@@ -83,6 +83,21 @@ data <- data %>%
   filter(sic >= sub_range_start & sic <= sub_range_end) %>%
   rename(industry = index, industry_abbr = name_abbr) %>%
   select(-sub_range_start, -sub_range_end)
+
+# Lag firm level variables
+data <- data %>%
+  group_by(tic) %>%
+  arrange(fyear) %>%
+  mutate(
+    firm_size = dplyr::lag(firm_size, 1),
+    leverage = dplyr::lag(leverage, 1),
+    roa = dplyr::lag(roa, 1),
+    operational_risk = dplyr::lag(operational_risk, 1),
+    tangibility = dplyr::lag(tangibility, 1),
+    z_score = dplyr::lag(z_score, 1),
+    mb = dplyr::lag(mb, 1)
+  ) %>%
+  ungroup()
 
 # Save data
 write_csv(data, "data/firm.csv")

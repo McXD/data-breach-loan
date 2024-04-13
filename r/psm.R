@@ -18,7 +18,7 @@ data <- firm %>%
 
 breach <- breach %>%
   mutate(breach_year = year(breach_disclosure_date)) %>%
-  mutate(breach = TRUE) %>%
+  mutate(breach = 1) %>%
   select(-breach_disclosure_date)
 
 # How many breaches are happen to the same firm-year?
@@ -39,7 +39,7 @@ breach <- breach %>%
 # Merge breach and compustat
 data <- data %>%
   left_join(breach, by = c("tic" = "edgar_ticker", "fyear" = "breach_year")) %>%
-  mutate(breach = ifelse(is.na(breach), FALSE, TRUE)) %>%
+  mutate(breach = ifelse(is.na(breach), 0, 1)) %>%
   select(-breach_information_type, -type_of_attack_list, -breach_cost_usd) %>%
   arrange(fyear, tic) %>%
   na.omit()

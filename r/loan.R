@@ -25,7 +25,7 @@ data <- data %>%
     loan_amount = Tranche_Amount_Converted,
     loan_maturity = as.numeric(difftime(Tranche_Maturity_Date, Tranche_Active_Date, units = "days")) / 30,
     performance_pricing = ifelse(is.na(Performance_Pricing), FALSE, TRUE),
-    secured = Secured == "Yes",
+    secured = ifelse(Secured == "Yes", 1, 0),
     financial_covenants = str_count(All_Covenants_Financial, ":"),
     general_covenants = str_count(All_Covenants_General, ":"),
     total_covenants = financial_covenants + general_covenants,
@@ -44,3 +44,6 @@ data %>%
   select(treated, loan_spread, loan_amount, loan_maturity, total_covenants, secured) %>%
   cor() %>%
   stargazer(type = "text")
+
+# Save data
+write_csv(data, "data/panel.csv")

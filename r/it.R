@@ -22,5 +22,12 @@ data <- data %>%
 
 summary(data$it_expertise)
 
+# Lag it_expertise
+data <- data %>%
+  group_by(GVKEY) %>%
+  arrange(YEAR) %>%
+  mutate(it_expertise = dplyr::lag(it_expertise, 1)) %>%
+  ungroup()
+
 # Save data
 write_csv(data, "data/it_expertise.csv")
