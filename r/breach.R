@@ -29,12 +29,25 @@ breach %>%
     max_date = max(breach_disclosure_date)
   )
 
-# Filter time period
-breach <- breach %>%
-  filter(
-    breach_disclosure_date >= as.Date("2005-01-01"),
-    breach_disclosure_date <= as.Date("2018-12-31")
+# Plot number of breaches over time
+breach %>%
+  count(year = year(breach_disclosure_date)) %>%
+  ggplot(aes(x = year, y = n)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    x = "Year",
+    y = "Number of breaches",
+    title = "Number of breaches over time"
   )
+
+
+# Filter time period
+# breach <- breach %>%
+#   filter(
+#     breach_disclosure_date >= as.Date("2010-01-01"),
+#     breach_disclosure_date <= as.Date("2021-12-31")
+#   )
 
 # Save cvs
 write_csv(breach, "data/breach.csv")

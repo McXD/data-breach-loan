@@ -1,4 +1,4 @@
-# Query: https://wrds-www.wharton.upenn.edu/query-manager/query/8301923/
+# Query: https://wrds-www.wharton.upenn.edu/query-manager/query/8321513/
 # Clean firm level variables:
 # - Firm Size: natural log of total assets.
 # - Leverage: total debt scaled by total assets
