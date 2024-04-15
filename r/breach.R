@@ -7,10 +7,7 @@ breach <- read_csv("data/breach_wrds.csv") %>%
   select(
     edgar_ticker = `BEST EDGAR TICKER`,
     breach_disclosure_date = `BREACH DISCLOSURE DATE`,
-    number_of_records_lost = `NUMBER OF RECORDS LOST`,
-    breach_information_type = `BREACH INFORMATION TYPE`,
-    type_of_attack_list = `TYPE OF ATTACK LIST`,
-    breach_cost_usd = `BREACH COST USD`
+    number_of_records_lost = `NUMBER OF RECORDS LOST`
   ) %>%
   mutate(
     breach_disclosure_date = as.Date(breach_disclosure_date, format = "%d/%m/%Y"),
@@ -40,14 +37,6 @@ breach %>%
     y = "Number of breaches",
     title = "Number of breaches over time"
   )
-
-
-# Filter time period
-# breach <- breach %>%
-#   filter(
-#     breach_disclosure_date >= as.Date("2010-01-01"),
-#     breach_disclosure_date <= as.Date("2021-12-31")
-#   )
 
 # Save cvs
 write_csv(breach, "data/breach.csv")

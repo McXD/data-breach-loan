@@ -1,19 +1,17 @@
 # Propensity score matching
 library(tidyverse)
+library(magrittr)
 library(MatchIt)
 library(knitr)
-
-# Constants
-START <- 2010
-END <- 2020
+library(stargazer)
 
 firm <- read_csv("data/firm.csv")
 breach <- read_csv("data/breach.csv")
 it <- read_csv("data/it_expertise.csv")
 
-data <- firm %>%
+firm <- firm %>%
   left_join(it, by = c("tic" = "TICKER", "fyear" = "YEAR")) %>%
-  select(-datadate, -GVKEY, -CONAME, -CUSIP) %>%
+  select(-datadate) %>%
   # Remove duplicates
   distinct(fyear, tic, .keep_all = TRUE)
 
@@ -22,52 +20,71 @@ breach <- breach %>%
   mutate(breach = 1) %>%
   select(-breach_disclosure_date)
 
-# How many breaches are happen to the same firm?
-breach %>%
-  group_by(edgar_ticker) %>%
-  summarise(n = n()) %>%
-  filter(n > 1)
-
-# If a company experience multiple breaches, we only consider the most severe one
-breach <- breach %>%
-  group_by(edgar_ticker) %>%
-  # turn NA to 0
-  mutate(number_of_records_lost = ifelse(is.na(number_of_records_lost), 0, number_of_records_lost)) %>%
-  filter(number_of_records_lost == max(number_of_records_lost)) %>%
-  slice(1) %>%
-  ungroup() %>%
-  select(-number_of_records_lost, - breach_cost_usd, -breach_information_type, -type_of_attack_list)
-
 # Merge breach and compustat
-data <- data %>%
+treatment <- firm %>%
   left_join(breach, by = c("tic" = "edgar_ticker", "fyear" = "breach_year")) %>%
-  mutate(breach = ifelse(is.na(breach), 0, 1)) %>%
-  arrange(fyear, tic) %>%
-  na.omit()
+  filter(!is.na(breach)) %>%
+  arrange(fyear, tic)
 
-# Filter time period
-data <- data %>%
-  filter(fyear >= START, fyear <= END)
-
-# How many breaches?
-summary(data$breach)
+# Check number of event firms
+treatment <- treatment %>%
+  filter(breach == 1) %T>%
+  {
+    print(paste("Total (2004-2023):", nrow(.)))
+  } %>%
+  filter(fyear >= 2010 & fyear <= 2020) %T>%
+  {
+    print(paste("2010-2020:", nrow(.)))
+  } %>%
+  {
+    # Filter firms with prior breach in 2008-2009
+    tmp <- filter(breach, breach_year >= 2008 & breach_year <= 2009)
+    filter(., !tic %in% tmp$edgar_ticker)
+  } %T>%
+  {
+    print(paste("2010-2020 (no prior breach):", nrow(.)))
+  } %>%
+  {
+    # If a company experience multiple breaches, we only consider the most severe one
+    mutate(., number_of_records_lost = ifelse(is.na(number_of_records_lost), 0, number_of_records_lost)) %>%
+      group_by(tic) %>%
+      filter(number_of_records_lost == max(number_of_records_lost)) %>%
+      slice(1) %>%
+      ungroup()
+  } %T>%
+  {
+    print(paste("2010-2020 (most severe):", nrow(.)))
+  } %>%
+  na.omit() %T>% {
+    print(paste("2010-2020 (complete data):", nrow(.)))
+  }
 
 # PSM
-
-# Turn time and industry to factors
-data <- data %>%
+psm_panel <- firm %>%
+  left_join(treatment %>% select(tic, fyear, breach), by = c("tic", "fyear")) %>%
+  mutate(breach = ifelse(is.na(breach), 0, 1)) %>%
   mutate(
     fyear = as.factor(fyear),
     industry = as.factor(industry)
-  )
+  ) %>%
+  na.omit()
 
 reg_formula <- breach ~ firm_size + leverage + roa + operational_risk + tangibility + z_score + mb + it_expertise + fyear + industry
 
-ps_model <- glm(reg_formula, data = data, family = binomial(link = "probit"))
+ps_model <- glm(reg_formula, data = psm_panel, family = binomial(link = "probit"))
 
-summary(ps_model)
+# Calculate pseudo R-squared
+pseduo_r2 <- 1 - ps_model$deviance / ps_model$null.deviance
 
-match_data <- matchit(reg_formula, method = "nearest", data = data, link = "probit")
+stargazer(
+  ps_model,
+  type = "text",
+  title = "Probit regression",
+  omit = c("fyear", "industry"),
+  add.lines = list(c("Pseudo R-squared", round(pseduo_r2, 3)))
+)
+
+match_data <- matchit(reg_formula, method = "nearest", data = psm_panel, link = "probit")
 
 summary(match_data)
 
@@ -108,6 +125,7 @@ data_matched %>%
     t = diff / se,
     p = 2 * pt(-abs(t), df = 2 * N - 2)
   ) %>%
-  select(variable, `1_mean`, `0_mean`, diff, t, p) %>%
+  select(variable, `1_mean`, `0_mean`, diff, p) %>%
   rename("Variable" = variable, "Treated" = `1_mean`, "Control" = `0_mean`, "Diff." = diff) %>%
+  mutate(across(where(is.numeric), ~ round(., 3))) %>%
   kable()

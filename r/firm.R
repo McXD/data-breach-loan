@@ -10,17 +10,13 @@
 
 library(tidyverse)
 library(slider)
-library(stargazer)
-library(knitr)
 
 # Load data
-data <- read_csv("data/crsp_compustat_merged.csv") %>%
+firm <- read_csv("data/crsp_compustat_merged.csv") %>%
   select(-GVKEY, -indfmt, -consol, -popsrc, -datafmt, -cusip, -curcd, -costat)
 
-summary(data)
-
 # Calculate firm level variables
-data <- data %>%
+firm <- firm %>%
   mutate(
     firm_size = log(1 + at),
     leverage = lt / at,
@@ -31,7 +27,7 @@ data <- data %>%
   )
 
 # Calculate operational risk with rolling window
-data <- data %>%
+firm <- firm %>%
   group_by(tic) %>%
   arrange(fyear) %>%
   mutate(tmp = oancf / at) %>%
@@ -48,32 +44,15 @@ data <- data %>%
   ungroup()
 
 # Clean
-data <- data %>%
+firm <- firm %>%
   select(-at, -lt, -ebitda, -ppent, -wcap, -re, -mkvalt, -sale, -oancf) %>%
   filter_all(all_vars(!is.infinite(.)))
-
-# Summarise numerical columns
-data %>%
-  summarise(across(where(is.numeric), .fns = list(
-    n = ~ sum(!is.na(.)),
-    mean = ~ mean(., na.rm = TRUE),
-    sd = ~ sd(., na.rm = TRUE),
-    p25 = ~ quantile(., probs = 0.25, na.rm = TRUE),
-    median = ~ median(., na.rm = TRUE),
-    p75 = ~ quantile(., probs = 0.75, na.rm = TRUE)
-  ))) %>%
-  pivot_longer(
-    cols = everything(),
-    names_to = c("Variables", ".value"),
-    names_pattern = "(.*)_(.*)"
-  ) %>%
-  kable()
 
 # Map sic code to indsutry
 sic_map <- read_csv("data/Siccodes48.csv") %>%
   select(index, name_abbr, sub_range_start, sub_range_end)
 
-data <- data %>%
+firm <- firm %>%
   mutate(sic = as.numeric(sic)) %>%
   cross_join(sic_map) %>%
   filter(sic >= sub_range_start & sic <= sub_range_end) %>%
@@ -81,7 +60,7 @@ data <- data %>%
   select(-sub_range_start, -sub_range_end)
 
 # Lag firm level variables
-data <- data %>%
+firm <- firm %>%
   group_by(tic) %>%
   arrange(fyear) %>%
   mutate(
@@ -96,4 +75,4 @@ data <- data %>%
   ungroup()
 
 # Save data
-write_csv(data, "data/firm.csv")
+write_csv(firm, "data/firm.csv")
