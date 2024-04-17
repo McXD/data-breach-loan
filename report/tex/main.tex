@@ -12,6 +12,7 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{dcolumn}
+\usepackage{adjustbox}
 
 \lstset{ 
   language=R,
@@ -110,6 +111,19 @@
   \begin{center}
     \includegraphics[width=0.8\textwidth]{../figs/hypothesis.png}
   \end{center}
+
+  \note{
+    \begin{itemize}
+      \item Direct costs lead to decrease in profitability, e.g., detection and escalation costs, notification costs, post-breach costs.
+      \item Indirect costs, e.g., loss of reputation, loss of customers.
+      \item Relationship with other stakeholders -- suppliers, executives, shareholders, regulators (e.g., Capital One).
+    \end{itemize}
+
+    \begin{itemize}
+      \item Banks rely on operating and accounting information, including insider information obtained directly from the firm to make loan decisions.
+      \item A data breach indicates that a weakness exists in this system and may lead others to doubt the reliability of the firm’s financial reporting
+    \end{itemize}
+  }
 \end{frame}
 
 \section{Replication}
@@ -130,14 +144,25 @@
       \quad \# event firms lacking the data for (PSM)          & (252)             & (155)         \\
       \# event firms after PSM                                 & 213               & 228           \\
       event firms + control firms                              & 426               & 456           \\
-      Bank loan observations from 2003 (2008) to 2016 (2022)   & 1,428             & 2165          \\
+      Bank loan observations from 2003 (2008) to 2016 (2022)   & 1,428             & 2,165         \\
       Less:                                                    &                   &               \\
       \quad financial services industries                      & (254)             & (166)         \\
       \quad bridge loans and non-fund-based facilities         & (55)              & (NA)          \\
       \quad insufficient to calculate control variables        & (37)              & (26)          \\
-      Final sample involving 139 (149) data breach event firms & 1,081             & 1973          \\ \bottomrule
+      Final sample involving 139 (149) data breach event firms & 1,081             & 1,973         \\ \bottomrule
     \end{tabular}
   \end{table}
+
+  \note{
+    From this table we can also see the overall empirical procedure.
+
+    Three databases involved.
+
+    \begin{itemize}
+      \item Replication taboo: different data. The reason is that my data in that period is half the size (and the result is not significant).
+      \item lots of breaches happening to the same company
+    \end{itemize}
+  }
 \end{frame}
 
 \begin{frame}[fragile] % The 'fragile' option is important when using verbatim content like code listings
@@ -162,6 +187,10 @@
 
   ps_model <- glm(reg_formula, data = psm_panel, family = binomial(link = "probit"))
   \end{lstlisting}
+
+  \note{
+    The first step is to
+  }
 
 \end{frame}
 
@@ -195,6 +224,11 @@
     \end{tabular}
   \end{table}
 
+  \note{
+    I would say the regression result is pretty significant.But let's take a look at how different the matched control is from the treatment.
+
+    Treated and P
+  }
 \end{frame}
 
 
@@ -222,6 +256,12 @@
       \bottomrule
     \end{tabular}
   \end{table}
+
+  \note{
+    Next with the identified treatment and control firms, we merge it with the loan sample, essentially filtering all the loans that of those firms. Then we arrive at the panel ready for DiD. But first, let's compare the summary stats.
+
+    A concern is loans pre- and post- is not balanced
+  }
 \end{frame}
 
 \begin{frame}
@@ -273,14 +313,34 @@
   rhs_formula <- ~ breach:year_pre_1 + breach:year_0 + breach:year_post_1 + breach:year_post_2 + log(loan_amount + 1) + log(loan_maturity + 1) + performance_pricing + firm_size + leverage + roa + operational_risk + tangibility + z_score + mb + it_expertise
   
   model_loan_spread <- plm(update.formula(rhs_formula, log(loan_spread) ~ .), data = did_panel, index = c("Ticker", "loan_year"), model = "within", effect = "twoways") \end{lstlisting}
+
+  \note{
+    The DiD regression is an expanded one with interaction between breach and relative year of loan to breach. This simultanously test the parralel trend.
+
+    I omitted some controls due to time constraint.
+
+    The regression is run with plm package.
+  }
 \end{frame}
 
-\begin{frame}
-  {Authors' DiD Result}
+\begin{frame}{Authors' DiD Result}
+  \begin{center}
+    \adjustbox{trim=0 0.5\height{} 0 0, clip}{%
+      \includegraphics[width=0.8\textwidth]{../tabs/main.png}
+    }
+  \end{center}
 
-  \begin{figure}
-    \includegraphics[width=0.8\textwidth]{../tabs/main-result.png}
-  \end{figure}
+  \note{
+    The authors' result is very nice with significance mark on all three dependent variables (at the right place). The total regression used 1081 samples for all specs.
+  }
+\end{frame}
+
+\begin{frame}{Authors' DiD Result (Cont.)}
+  \begin{center}
+    \adjustbox{trim=0 0 0 0.5\height{}, clip}{%
+      \includegraphics[width=0.8\textwidth]{../tabs/main.png}
+    }
+  \end{center}
 \end{frame}
 
 \begin{frame}{Replication DiD Result}
@@ -309,6 +369,10 @@
       \hline
     \end{tabular}
   \end{table}
+
+  \note{
+    Unfortunately, my result is not good. The key variables are not loaded. And coefficients with significance are off the target most of the time.
+  }
 \end{frame}
 
 \begin{frame}
@@ -342,16 +406,24 @@
     \end{tabular}
   \end{table}
 \end{frame}
-`'
+
+\section{Conclusion}
+
 \begin{frame}
-  {Conclusion}
-  \Large
-  Reasons for no results:
+  {Possible reasons for no results}
   \begin{itemize}
     \item Data breach sample
+    \item Loan data
     \item Control variable
+    \item Coding error
     \item Pattern not generalisable
   \end{itemize}
+
+  \note{
+    The most probable culprit is the different data breach sample.
+
+    I didn't dive into the detail of functions such as match data
+  }
 \end{frame}
 
 \end{document}
